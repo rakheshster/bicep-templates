@@ -2,7 +2,7 @@
 @description('Size of VM. If you want different sizes select from https://docs.microsoft.com/en-us/azure/virtual-machines/av2-series')
 param vmSize string = 'Standard_A4_v2'
 
-@description('Name of the VM')
+@description('Name of the VM; will be truncated to 15 characters in the OS')
 param vmName string
 
 @description('Storage type')
@@ -36,7 +36,8 @@ param domainPassword string
 param ouPath string
 
 @description('Local Admin username of the VM')
-param adminUsername string = '${vmName}admin'
+@maxLength(20)
+param adminUsername string = 'localadmin'
 
 @description('Local Admin password of the VM')
 @secure()
@@ -56,6 +57,7 @@ param imageOffer string
 param windowsOSVersion string
 
 // === Variables ===
+var vmNameShort = substring(vmName,0,15)
 var location = resourceGroup().location
 var nicName = '${vmName}-nic'
 var osDisk = '${vmName}-osDisk'
@@ -99,7 +101,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-03-01' = {
       vmSize: vmSize
     }
     osProfile: {
-      computerName: vmName
+      computerName: vmNameShort
       adminUsername: adminUsername
       adminPassword: adminPassword
     }
