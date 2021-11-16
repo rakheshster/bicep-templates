@@ -1,0 +1,230 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.4.1008.15138",
+      "templateHash": "7349057306786214730"
+    }
+  },
+  "parameters": {
+    "vmSize": {
+      "type": "string",
+      "defaultValue": "Standard_A4_v2",
+      "metadata": {
+        "description": "Size of VM. If you want different sizes select from https://docs.microsoft.com/en-us/azure/virtual-machines/av2-series"
+      }
+    },
+    "vmName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the VM; will be truncated to 15 characters in the OS"
+      }
+    },
+    "storageType": {
+      "type": "string",
+      "defaultValue": "StandardSSD_LRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "StandardSSD_LRS",
+        "Premium_LRS"
+      ],
+      "metadata": {
+        "description": "Storage type"
+      }
+    },
+    "existingVnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "Virtual Network to place the VM into **this must exist already**"
+      }
+    },
+    "existingSubnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "Subnet to place the VM into **this must exist already and be able to talk to the Domain Controllers**"
+      }
+    },
+    "vnetResourceGroup": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().name]",
+      "metadata": {
+        "description": "Resource Group of the Virtual Network; defaults to the current one"
+      }
+    },
+    "domainToJoin": {
+      "type": "string",
+      "metadata": {
+        "description": "The AD domain name"
+      }
+    },
+    "domainUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "Domain Join account username"
+      }
+    },
+    "domainPassword": {
+      "type": "secureString",
+      "metadata": {
+        "description": "Domain Join account password"
+      }
+    },
+    "ouPath": {
+      "type": "string",
+      "metadata": {
+        "description": "OU to put VM into"
+      }
+    },
+    "adminUsername": {
+      "type": "string",
+      "defaultValue": "localadmin",
+      "maxLength": 20,
+      "metadata": {
+        "description": "Local Admin username of the VM"
+      }
+    },
+    "adminPassword": {
+      "type": "secureString",
+      "metadata": {
+        "description": "Local Admin password of the VM"
+      }
+    },
+    "imagePublisher": {
+      "type": "string",
+      "allowedValues": [
+        "MicrosoftWindowsDesktop",
+        "MicrosoftWindowsServer"
+      ],
+      "metadata": {
+        "description": "Image Publisher - get via Get-AzVMImagePublisher -Location <location>"
+      }
+    },
+    "imageOffer": {
+      "type": "string",
+      "metadata": {
+        "description": "Image Offer - get via Get-AzVMImageOffer -PublisherName <publisher> -Location <location>"
+      }
+    },
+    "windowsOSVersion": {
+      "type": "string",
+      "metadata": {
+        "description": "Image Sku - get via Get-AzVMImageSku -PublisherName <publisher> -Offer <offer> -Location <location>"
+      }
+    }
+  },
+  "functions": [],
+  "variables": {
+    "vmNameShort": "[substring(parameters('vmName'), 0, 15)]",
+    "location": "[resourceGroup().location]",
+    "nicName": "[format('{0}-nic', parameters('vmName'))]",
+    "osDisk": "[format('{0}-osDisk', parameters('vmName'))]",
+    "dataDisk": "[format('{0}-dataDisk', parameters('vmName'))]",
+    "domainJoinOptions": 3
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2021-02-01",
+      "name": "[variables('nicName')]",
+      "location": "[variables('location')]",
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('vnetResourceGroup')), 'Microsoft.Network/virtualNetworks/subnets', parameters('existingVnetName'), parameters('existingSubnetName'))]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2021-03-01",
+      "name": "[parameters('vmName')]",
+      "location": "[variables('location')]",
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('vmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[variables('vmNameShort')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[parameters('imagePublisher')]",
+            "offer": "[parameters('imageOffer')]",
+            "sku": "[parameters('windowsOSVersion')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "[variables('osDisk')]",
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "diskSizeGB": 127,
+            "managedDisk": {
+              "storageAccountType": "[parameters('storageType')]"
+            },
+            "osType": "Windows"
+          },
+          "dataDisks": [
+            {
+              "name": "[variables('dataDisk')]",
+              "caching": "None",
+              "createOption": "Empty",
+              "diskSizeGB": 1024,
+              "lun": 0
+            }
+          ]
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]"
+            }
+          ]
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "apiVersion": "2021-03-01",
+      "name": "[format('{0}/{1}', parameters('vmName'), 'joindomain')]",
+      "location": "[variables('location')]",
+      "properties": {
+        "publisher": "Microsoft.Compute",
+        "type": "JsonADDomainExtension",
+        "typeHandlerVersion": "1.3",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "name": "[parameters('domainToJoin')]",
+          "ouPath": "[parameters('ouPath')]",
+          "user": "[format('{0}\\{1}', parameters('domainToJoin'), parameters('domainUsername'))]",
+          "restart": true,
+          "options": "[variables('domainJoinOptions')]"
+        },
+        "protectedSettings": {
+          "Password": "[parameters('domainPassword')]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', parameters('vmName'))]"
+      ]
+    }
+  ]
+}
