@@ -5,6 +5,14 @@ param vmSize string = 'Standard_A4_v2'
 @description('Name of the VM')
 param vmName string
 
+@description('Storage type')
+@allowed([
+  'Standard_LRS' 
+  'StandardSSD_LRS'
+  'Premium_LRS'
+])
+param storageType string = 'StandardSSD_LRS'
+
 @description('Virtual Network to place the VM into **this must exist already**')
 param existingVnetName string
 
@@ -108,7 +116,7 @@ resource virtualMachine 'Microsoft.Compute/virtualMachines@2021-03-01' = {
         createOption: 'FromImage'
         diskSizeGB: 127
         managedDisk: {
-          storageAccountType: 'Premium_LRS'
+          storageAccountType: storageType
         }
         osType: 'Windows'
       }
