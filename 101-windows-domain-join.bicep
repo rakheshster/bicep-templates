@@ -35,6 +35,10 @@ param adminUsername string = '${vmName}admin'
 param adminPassword string
 
 @description('Image Publisher - get via Get-AzVMImagePublisher -Location <location>')
+@allowed([
+  'MicrosoftWindowsDesktop'
+  'MicrosoftWindowsServer'
+])
 param imagePublisher string
 
 @description('Image Offer - get via Get-AzVMImageOffer -PublisherName <publisher> -Location <location>')
