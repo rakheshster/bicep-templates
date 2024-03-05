@@ -1,0 +1,13 @@
+using 'mstunnel.bicep'
+
+param adminUsername = 'denadmin'
+param vmName = 'ca1intunemstunnel01'
+param vmSize = 'Standard_DS3_v2'
+param authenticationType = 'password'
+param ubuntuOSVersion = 'Ubuntu-2204'
+param virtualNetworkName = 'ca1'
+param subnetName = 'mobility'
+param vNetResourceGroup = 'ca1-network'
+param privateIPaddress = ''
+param availabilitySet = 'ca1intunemstunnel'
+param osDiskType = 'Standard_LRS'

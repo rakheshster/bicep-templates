@@ -1,0 +1,101 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "virtualMachines_ca1devintunemstunnel01_name": {
+            "defaultValue": "ca1devintunemstunnel01",
+            "type": "String"
+        },
+        "availabilitySets_CA1INTUNEMSTUNNEL_externalid": {
+            "defaultValue": "/subscriptions/13ccaf89-ddcd-4be1-9fc6-c9d65761d512/resourceGroups/ca1-mobility/providers/Microsoft.Compute/availabilitySets/CA1INTUNEMSTUNNEL",
+            "type": "String"
+        },
+        "disks_ca1devintunemstunnel01_OsDisk_1_40e78aea69c7404cbee879d38ed25bc3_externalid": {
+            "defaultValue": "/subscriptions/13ccaf89-ddcd-4be1-9fc6-c9d65761d512/resourceGroups/CA1-MOBILITY/providers/Microsoft.Compute/disks/ca1devintunemstunnel01_OsDisk_1_40e78aea69c7404cbee879d38ed25bc3",
+            "type": "String"
+        },
+        "networkInterfaces_ca1devintunemstunnel0193_externalid": {
+            "defaultValue": "/subscriptions/13ccaf89-ddcd-4be1-9fc6-c9d65761d512/resourceGroups/ca1-mobility/providers/Microsoft.Network/networkInterfaces/ca1devintunemstunnel0193",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2023-03-01",
+            "name": "[parameters('virtualMachines_ca1devintunemstunnel01_name')]",
+            "location": "canadacentral",
+            "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                    "/subscriptions/13ccaf89-ddcd-4be1-9fc6-c9d65761d512/resourceGroups/Built-In-Identity-RG/providers/Microsoft.ManagedIdentity/userAssignedIdentities/Built-In-Identity-canadacentral": {}
+                }
+            },
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "Standard_B2s"
+                },
+                "availabilitySet": {
+                    "id": "[parameters('availabilitySets_CA1INTUNEMSTUNNEL_externalid')]"
+                },
+                "additionalCapabilities": {
+                    "hibernationEnabled": false
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "canonical",
+                        "offer": "0001-com-ubuntu-server-jammy",
+                        "sku": "22_04-lts-gen2",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "osType": "Linux",
+                        "name": "[concat(parameters('virtualMachines_ca1devintunemstunnel01_name'), '_OsDisk_1_40e78aea69c7404cbee879d38ed25bc3')]",
+                        "createOption": "FromImage",
+                        "caching": "ReadWrite",
+                        "managedDisk": {
+                            "storageAccountType": "StandardSSD_LRS",
+                            "id": "[parameters('disks_ca1devintunemstunnel01_OsDisk_1_40e78aea69c7404cbee879d38ed25bc3_externalid')]"
+                        },
+                        "deleteOption": "Delete",
+                        "diskSizeGB": 30
+                    },
+                    "dataDisks": [],
+                    "diskControllerType": "SCSI"
+                },
+                "osProfile": {
+                    "computerName": "[parameters('virtualMachines_ca1devintunemstunnel01_name')]",
+                    "adminUsername": "denadmin",
+                    "linuxConfiguration": {
+                        "disablePasswordAuthentication": false,
+                        "provisionVMAgent": true,
+                        "patchSettings": {
+                            "patchMode": "ImageDefault",
+                            "assessmentMode": "ImageDefault"
+                        },
+                        "enableVMAgentPlatformUpdates": false
+                    },
+                    "secrets": [],
+                    "allowExtensionOperations": true,
+                    "requireGuestProvisionSignal": true
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[parameters('networkInterfaces_ca1devintunemstunnel0193_externalid')]",
+                            "properties": {
+                                "deleteOption": "Delete"
+                            }
+                        }
+                    ]
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": true
+                    }
+                }
+            }
+        }
+    ]
+}
